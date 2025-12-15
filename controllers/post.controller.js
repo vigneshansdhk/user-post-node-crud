@@ -135,6 +135,89 @@ exports.userGetAllPost = async (req, res) => {
 };
 
 
+exports.userEdit = async (req, res) => {
+    try {
+        const { postId } = req.params;
+        const userId = req.user.id;
+
+        const query = `SELECT * FROM posts WHERE id = $1 AND user_id = $2`;
+        const result = await pool.query(query, [postId, userId]);
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ message: "Post not found or not authorized" });
+        }
+
+        return res.status(200).json({
+            message: "Post fetched successfully",
+            data: result.rows[0]
+        });
+
+    } catch (error) {
+        return res.status(500).json({ error: error.message });
+    }
+};
+
+
+
+exports.userUpdate = async (req, res) => {
+    try {
+        const { postId } = req.params;
+        const { title, content } = req.body;
+        const userId = req.user.id;
+
+        const checkQuery = `SELECT * FROM posts WHERE id = $1 AND user_id = $2`;
+        const checkResult = await pool.query(checkQuery, [postId, userId]);
+
+        if (checkResult.rows.length === 0) {
+            return res.status(404).json({ message: "Post not found or not authorized" });
+        }
+
+        const updateQuery = `
+            UPDATE posts
+            SET title = $1, content = $2, updated_at = NOW()
+            WHERE id = $3 AND user_id = $4
+            RETURNING *
+        `;
+        const result = await pool.query(updateQuery, [title, content, postId, userId]);
+
+        return res.status(200).json({
+            message: "Post updated successfully",
+            data: result.rows[0]
+        });
+
+    } catch (error) {
+        return res.status(500).json({ error: error.message });
+    }
+};
+
+exports.userDelete = async (req, res) => {
+    try {
+        const { postId } = req.params;
+        const userId = req.user.id;
+
+        const checkQuery = `SELECT * FROM posts WHERE id = $1 AND user_id = $2`;
+        const checkResult = await pool.query(checkQuery, [postId, userId]);
+
+        if (checkResult.rows.length === 0) {
+            return res.status(404).json({ message: "Post not found or not authorized" });
+        }
+
+        const deleteQuery = `DELETE FROM posts WHERE id = $1 AND user_id = $2 RETURNING *`;
+        const result = await pool.query(deleteQuery, [postId, userId]);
+
+        return res.status(200).json({
+            message: "Post deleted successfully",
+            data: result.rows[0]
+        });
+
+    } catch (error) {
+        return res.status(500).json({ error: error.message });
+    }
+};
+
+
+
+
 
 
 
