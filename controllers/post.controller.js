@@ -71,4 +71,70 @@ exports.login = async (req, res) => {
 
 }
 
+exports.userCreate = async (req, res) => {
+    try {
+        const { title, content } = req.body;
+
+        const userId = req.user.id;
+
+        const values = [userId, title, content];
+
+        const query = `
+      INSERT INTO posts (user_id, title, content)
+      VALUES ($1, $2, $3)
+      RETURNING *
+    `;
+
+        const result = await pool.query(query, values);
+
+        return res.status(200).json({
+            message: "User Posted Successfully",
+            data: result.rows[0]
+        });
+
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
+
+exports.userGetAllPost = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const { title, content } = req.query;
+
+        let query = `
+            SELECT * FROM posts
+            WHERE user_id = $1
+        `;
+        let values = [userId];
+        let index = 2;
+
+        if (title) {
+            query += ` AND title ILIKE $${index++}`;
+            values.push(`%${title}%`);
+        }
+
+        if (content) {
+            query += ` AND content ILIKE $${index++}`;
+            values.push(`%${content}%`);
+        }
+
+        query += ` ORDER BY created_at DESC`;
+
+        const result = await pool.query(query, values);
+
+        return res.status(200).json({
+            message: "User Post Listed Successfully",
+            data: result.rows
+        });
+
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
+
+
+
 
